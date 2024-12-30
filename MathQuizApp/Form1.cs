@@ -6,6 +6,7 @@ namespace MathQuizApp
     {
         private Panel overlayPanel; // The overlay panel
         private Label lblIncorrectCdTimer;   // The label to display timer or message
+        private Label lblCorrectedAnswer;
 
         public Form1()
         {
@@ -66,6 +67,21 @@ namespace MathQuizApp
 
             // Add the label to the overlay panel
             overlayPanel.Controls.Add(lblIncorrectCdTimer);
+
+            // Initialize and configure the timer label
+            lblCorrectedAnswer = new Label
+            {
+                AutoSize = true,  // Let the label size adjust to its content
+                Font = new Font("Arial", 24, FontStyle.Bold), // Customize the font and size
+                ForeColor = Color.White, // White text color for contrast
+                Text = "0", // Placeholder text for the timer
+                Location = new Point((overlayPanel.Width + 200) / 2, // Center horizontally
+                                     (overlayPanel.Height + 100) / 2), // Center vertically
+                TextAlign = ContentAlignment.MiddleCenter // Ensure text is centered in the label
+            };
+
+            // Add the label to the overlay panel
+            overlayPanel.Controls.Add(lblCorrectedAnswer);
         }
 
         // Method to show the overlay
@@ -180,6 +196,7 @@ namespace MathQuizApp
             StopTimer();
             ShowIncorrectOverlay();
 
+            lblCorrectedAnswer.Text = answer.ToString();
             for (int i = 3; i > 0; i--)
             {
                 lblIncorrectCdTimer.Text = i.ToString();
@@ -189,6 +206,8 @@ namespace MathQuizApp
             lblQuestion.Text = answer.ToString();
             lblQuestion.BackColor = Color.Red;
             questionNum = 0;
+            maxNum = 10;
+            minNum = 0;
 
             lblQuestion.BackColor = Color.White;
             HideIncorrectOverlay();
@@ -197,9 +216,9 @@ namespace MathQuizApp
         private void DisplayNextQuestion()
         {
             ResetTimer();
-            operation = (Operation) random.Next(0, 3);
+            operation = (Operation)random.Next(0, 4);
 
-            if (operation == Operation.Divide)
+            if (operation.Equals(Operation.Divide))
             {
                 var (newNum1, newNum2) = GenerateDivisiblePair(minNum, maxNum);
                 num1 = newNum1;
@@ -207,8 +226,9 @@ namespace MathQuizApp
             }
             else
             {
-                num1 = random.Next(minNum, maxNum);
-                num2 = random.Next(minNum, maxNum);
+                // Next includes min but not max
+                num1 = random.Next(minNum, maxNum+1);
+                num2 = random.Next(minNum, maxNum+1);
             }
 
             string newQuestion = String.Format("{0} {1} {2}", num1, OperationToCharMap[operation], num2);
@@ -218,6 +238,9 @@ namespace MathQuizApp
             SetScore(questionNum);
             answer = newAnswer;
             questionNum += 1;
+
+            maxNum += 1;
+            minNum -= 1;
         }
 
         private void SetScore(int questionNum)
@@ -229,25 +252,15 @@ namespace MathQuizApp
             lblScore.Font = newFont;
         }
 
-        private (int, int) GenerateDivisiblePair(int minVal, int maxVal)
+        private (int, int) GenerateDivisiblePair(int val1, int val2)
         {
-            // Generate the first random number within the range
-            int num1 = random.Next(minVal, maxVal + 1);
+            // Ensure that minVal is not zero (if the range allows for zero values)
+            if (val1 == 0) val1 = 1;  // Adjust if needed based on your requirements
 
-            // Find all divisors of num1 within the range
-            List<int> divisors = new List<int>();
-            for (int i = minVal; i <= maxVal; i++)
-            {
-                if (num1 % i == 0)
-                {
-                    divisors.Add(i);
-                }
-            }
+            // Flip one of the numbers half the time
+            if (random.Next(0, 2) == 0) val1 *= -1;
 
-            // Randomly choose a divisor
-            int num2 = divisors[random.Next(divisors.Count)];
-
-            return (num1, num2);
+            return (val1*val2, val1);
         }
 
         private int Calculate(Operation operation, int num1, int num2)
